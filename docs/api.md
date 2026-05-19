@@ -19,3 +19,5 @@ After getting the base URL, it's pretty easy. The JSON returned should look some
 ```
 
 Note that, from what I've seen, either error or result will appear. The items are in order as they appear (from what I see at least).
+
+It should then be pretty easy to use the [CKAN API](https://docs.ckan.org/en/2.11/api/index.html#making-an-api-request) to get the data!
