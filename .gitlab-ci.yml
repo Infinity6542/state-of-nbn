@@ -8,12 +8,57 @@
 stages:
 - test
 - secret-detection
+- generate
+- release
+
+cache:
+  key: pipeline-state
+  paths:
+    - .julia/artifacts/
+    - latest
+
 sast:
   stage: test
+
 include:
 - template: Security/SAST.gitlab-ci.yml
 - template: Security/Secret-Detection.gitlab-ci.yml
+
 variables:
   SECRET_DETECTION_ENABLED: 'true'
+
 secret_detection:
   stage: secret-detection
+
+generate:
+  state: generate
+  image: julia:1.10.11
+  before_script:
+    - julia -e 'using Pkof; Pkg.active("."); Pkg.add(["HTTP", "JSON3", "CSV", "DataFrames", "CairoMakie", "Statistics"]); Pkg.instantiate();'
+  script:
+    - julia src/main.jl
+  artifacts:
+    name: "nbn-report"
+    when: always
+    paths:
+      - output1.png
+    reports:
+      dotenv: release.env
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/cli:latest
+  needs:
+    - job: generate
+    artifacts: true
+  rules:
+    - exists:
+        - release.env
+  before_script:
+    - glab auth login --token $CI_JOB_TOKEN --hostname $CI_SERVER_HOST
+  script:
+    - >
+      glab release create $RELEASE_TAG
+      --name "$RELEASE_VERSION"
+      --assets-links "[{\"name\":\"Dashboard\",\"url\":\"${CI_PROJECT_URL}/-/jobs/${GE_JOB_ID}/artifacts/file/output1.png\"}]"
+
