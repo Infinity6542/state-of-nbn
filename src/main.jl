@@ -50,6 +50,10 @@ else
     write(io, string(latest))
   end
   println("Confirmed new data release, now tracking and performing data for release no. $latest")
+
+  open("release.env", "w") do IOBuffer
+    write(io, "RELEASE_VERSION=Report-$latest\n")
+  write(io, "RELEASE_TAG=v$latest\n")
 end
 
 for resource in release.resources
