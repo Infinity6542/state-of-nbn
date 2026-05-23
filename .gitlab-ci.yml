@@ -36,8 +36,7 @@ generate:
   stage: generate
   image: julia:1.10.11
   before_script:
-    - rm -f release.environment:
-        name: value
+    - rm -f release.env
     - julia --project=. -e 'using Pkg; Pkg.instantiate();'
   script:
     - julia --project=. src/main.jl
