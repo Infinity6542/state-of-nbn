@@ -31,7 +31,7 @@ secret_detection:
   stage: secret-detection
 
 generate:
-  state: generate
+  stage: generate
   image: julia:1.10.11
   before_script:
     - julia -e 'using Pkof; Pkg.active("."); Pkg.add(["HTTP", "JSON3", "CSV", "DataFrames", "CairoMakie", "Statistics"]); Pkg.instantiate();'
@@ -50,7 +50,7 @@ release:
   image: registry.gitlab.com/gitlab-org/cli:latest
   needs:
     - job: generate
-    artifacts: true
+      artifacts: true
   rules:
     - exists:
         - release.env
