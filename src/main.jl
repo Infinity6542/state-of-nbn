@@ -108,4 +108,4 @@ barplot!(state, 1:nrow(state_summary), state_summary.avg_perf, direction = :x, c
 state.xticklabelcolor = "#FFFFFF"
 state.yticklabelcolor = "#FFFFFF"
 
-save("prev1.png", fig) 
+save("output1.png", fig) 
