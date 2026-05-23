@@ -15,6 +15,8 @@ cache:
   key: pipeline-state
   paths:
     - .julia/artifacts/
+    - .julia/compiled/
+    - .julia/artifacts
     - latest
 
 sast:
@@ -34,9 +36,11 @@ generate:
   stage: generate
   image: julia:1.10.11
   before_script:
-    - julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add(["HTTP", "JSON3", "CSV", "DataFrames", "CairoMakie", "Statistics"]); Pkg.instantiate();'
+    - rm -f release.environment:
+        name: value
+    - julia --project=. -e 'using Pkg; Pkg.instantiate();'
   script:
-    - julia --porject=. src/main.jl
+    - julia --project=. src/main.jl
   artifacts:
     name: "nbn-report"
     when: always
