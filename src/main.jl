@@ -1,7 +1,7 @@
 using HTTP, JSON3, CSV, DataFrames, CairoMakie, Statistics
 
 const base_url = "https://data.gov.au/data/api/3/action"
-latest = open("latest", "r") do io
+latest = open("../latest", "r") do io
   read(io, String)
 end
 
@@ -45,13 +45,13 @@ if release.name == "measruing-broadband-australia-report-$latest-dataset-release
   println("No new release, exiting...")
   exit()
 else
-  global latest = latest + 1
-  open("latest", "w") do io
+  global latest = parse(Int, latest) + 1
+  open("../latest", "w") do io
     write(io, string(latest))
   end
   println("Confirmed new data release, now tracking and performing data for release no. $latest")
 
-  open("release.env", "w") do IOBuffer
+  open("../release.env", "w") do io
     write(io, "RELEASE_VERSION=Report-$latest\n")
   write(io, "RELEASE_TAG=v$latest\n")
 end
@@ -59,9 +59,11 @@ end
 for resource in release.resources
   if endswith(resource.url, ".csv")
     global df = CSV.read(IOBuffer(HTTP.get(resource.url).body), DataFrame)
-    println("Loaded fata with $(nrow(df)) rows and $(ncol(df)) columns")
+    println("Loaded data with $(nrow(df)) rows and $(ncol(df)) columns")
   end
 end
+
+println("Generating graph...")
 
 df[!, :advertised_download] = extract_adv.(df[!, :tier])
 
@@ -112,4 +114,8 @@ barplot!(state, 1:nrow(state_summary), state_summary.avg_perf, direction = :x, c
 state.xticklabelcolor = "#FFFFFF"
 state.yticklabelcolor = "#FFFFFF"
 
-save("output1.png", fig) 
+println("Saving graph...")
+save("../outputs/output1.png", fig) 
+print("Completed")
+
+end
