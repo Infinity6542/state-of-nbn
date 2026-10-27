@@ -46,7 +46,7 @@ generate:
     - rm -f release.env
     - julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
   script:
-    - julia --project=. src/main.jl
+    - cd src && julia --project=. main.jl
   artifacts:
     name: "nbn-report"
     when: always
