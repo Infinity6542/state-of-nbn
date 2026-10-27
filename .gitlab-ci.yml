@@ -7,7 +7,6 @@
 # See https://docs.gitlab.com/ci/variables/#cicd-variable-precedence
 stages:
 - test
-- secret-detection
 - generate
 - release
 
@@ -19,25 +18,33 @@ cache:
     - .julia/artifacts
     - latest
 
-sast:
-  stage: test
-
 include:
 - template: Security/SAST.gitlab-ci.yml
 - template: Security/Secret-Detection.gitlab-ci.yml
 
 variables:
   SECRET_DETECTION_ENABLED: 'true'
+  JULIA_DEPOT_PATH: "$CI_PROJECT_DIR/.julia"
+
+cache:
+  key:
+    files:
+      - Manifest.toml
+  paths:
+    - .julia/
+
+sast:
+  stage: test
 
 secret_detection:
-  stage: secret-detection
+  stage: test
 
 generate:
   stage: generate
   image: julia:1.10.12
   before_script:
     - rm -f release.env
-    - julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build();'
+    - julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
   script:
     - julia --project=. src/main.jl
   artifacts:
@@ -51,9 +58,6 @@ generate:
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/cli:latest
-  needs:
-    - job: generate
-      artifacts: true
   rules:
     - exists:
         - release.env
