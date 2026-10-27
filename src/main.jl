@@ -53,43 +53,86 @@ df[!, :advertised_download] = extract_adv.(df[!, :tier])
 df[!, :perf_ratio] = (df[!, "Busy hour trimmed mean download speed"] ./ df[!, :advertised_download]) .* 100.0
 
 outages = round(mean(skipmissing(df[!, "Average daily outages"])), digits = 2)
-state_summary = combine(groupby(df, :state_or_territory), :perf_ratio => mean => :avg_perf)
-rsp_summary = combine(groupby(dropmissing(df, :rsp), :rsp), :perf_ratio => mean => :avg_perf)
+
+state_df = dropmissing(df, [:state_or_territory, :perf_ratio])
+state_summary = combine(groupby(state_df, :state_or_territory), 
+                        :perf_ratio => (x -> mean(skipmissing(x))) => :avg_perf)
+
+rsp_df = dropmissing(df, [:rsp, :perf_ratio])
+rsp_summary = combine(groupby(rsp_df, :rsp), 
+                      :perf_ratio => (x -> mean(skipmissing(x))) => :avg_perf)
 sort!(rsp_summary, :avg_perf, rev = true)
 
 println("Generating graph...")
 
-fig = Figure(size = (1600, 1200), backgroundcolor = "#0D1B2A")
-rowgap!(fig.layout, 20)
+fig = Figure(
+    size = (1600, 1200),
+    backgroundcolor = "#0D1B2A",
+    figure_padding = (25, 25, 25, 20)
+)
+
+rowgap!(fig.layout, 15)
 colgap!(fig.layout, 20)
 
-Label(fig[1, 1:3], "The State of NBN"; fontsize = 40, color = "#FFFFFF",
+Label(fig[1, 1:3], "The State of NBN";
+      fontsize = 36, color = "#FFFFFF",
       halign = :left, tellwidth = false)
 
 ax_state = Axis(fig[2, 1];
     title = "Performance by State/Territory (% of plan speed, higher is better)",
-    titlecolor = "#FFFFFF", backgroundcolor = "#1B263B",
+    titlecolor = "#FFFFFF",
+    titlesize = 16,
+    backgroundcolor = "#1B263B",
     yticks = (1:nrow(state_summary), string.(state_summary.state_or_territory)),
-    xticklabelcolor = "#FFFFFF", yticklabelcolor = "#FFFFFF")
+    xticklabelcolor = "#FFFFFF",
+    yticklabelcolor = "#FFFFFF",
+    xgridcolor = ("#FFFFFF", 0.08),
+    ygridcolor = :transparent)
+
 barplot!(ax_state, 1:nrow(state_summary), state_summary.avg_perf;
-         direction = :x, color = "#2196F3")
+         direction = :x, color = "#2196F3", gap = 0.15)
+
+tightlimits!(ax_state, Left())
+xlims!(ax_state, 0, maximum(state_summary.avg_perf) * 1.08)
+ylims!(ax_state, 0.4, nrow(state_summary) + 0.6)
 
 ax_rsp = Axis(fig[2, 2];
     title = "Top Performing RSP (% of Plan Speed, higher is better)",
-    titlecolor = "#FFFFFF", backgroundcolor = "#1B263B",
+    titlecolor = "#FFFFFF",
+    titlesize = 16,
+    backgroundcolor = "#1B263B",
     xticks = (1:nrow(rsp_summary), string.(rsp_summary.rsp)),
     xticklabelrotation = pi / 4,
-    xticklabelcolor = "#FFFFFF", yticklabelcolor = "#FFFFFF")
-barplot!(ax_rsp, 1:nrow(rsp_summary), rsp_summary.avg_perf; color = "#00E676")
+    xticklabelcolor = "#FFFFFF",
+    yticklabelcolor = "#FFFFFF",
+    ygridcolor = ("#FFFFFF", 0.08),
+    xgridcolor = :transparent)
+
+barplot!(ax_rsp, 1:nrow(rsp_summary), rsp_summary.avg_perf;
+         color = "#00E676", gap = 0.15)
+
+tightlimits!(ax_rsp, Bottom())
+ylims!(ax_rsp, 0, maximum(rsp_summary.avg_perf) * 1.08)
+xlims!(ax_rsp, 0.4, nrow(rsp_summary) + 0.6)
 
 card = GridLayout(fig[2, 3])
-Box(card[1:3, 1]; color = "#1B263B", strokevisible = false,
-    tellwidth = false, tellheight = false)
-Label(card[1, 1], "Average Daily Outages"; color = "#FFFFFF", fontsize = 16, valign = :bottom)
-Label(card[2, 1], "Lower is better"; color = "#A0AAB5", fontsize = 10, valign = :bottom)
-Label(card[3, 1], "$outages%"; color = "#00E676", fontsize = 70, valign = :top)
-rowgap!(card, 5)
-colsize!(fig.layout, 3, Relative(0.2))
+Box(card[1, 1]; color = "#1B263B", strokevisible = false)
+
+inner_card = GridLayout(card[1, 1], tellheight = false)
+Label(inner_card[1, 1], "Average Daily\nOutages";
+      color = "#FFFFFF", fontsize = 18, halign = :center)
+Label(inner_card[2, 1], "Lower is better";
+      color = "#A0AAB5", fontsize = 12, halign = :center)
+Label(inner_card[3, 1], "$outages%";
+      color = "#00E676", fontsize = 64, halign = :center)
+rowgap!(inner_card, 10)
+
+rowsize!(fig.layout, 1, Auto())
+rowsize!(fig.layout, 2, Relative(1.0))
+
+colsize!(fig.layout, 1, Relative(0.40))
+colsize!(fig.layout, 2, Relative(0.44))
+colsize!(fig.layout, 3, Relative(0.16))
 
 println("Saving graph...")
 mkpath(OUTDIR)
