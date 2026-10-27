@@ -41,7 +41,7 @@ secret_detection:
 
 generate:
   stage: generate
-  image: julia:1.10.12
+  image: julia:1.12.6
   before_script:
     - rm -f release.env
     - julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
