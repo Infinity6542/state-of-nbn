@@ -44,7 +44,7 @@ generate:
     name: "nbn-report"
     when: always
     paths:
-      - output1.png
+      - outputs/output1.png
     reports:
       dotenv: release.env
 
