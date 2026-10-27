@@ -2,5 +2,4 @@ data/*
 outputs/*
 .wakatime-project
 *.png
-**/*latest
 release.env
