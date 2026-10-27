@@ -1,26 +1,11 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/user/application_security/sast/#available-cicd-variables
-# Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure/
-# Dependency Scanning customization: https://docs.gitlab.com/user/application_security/dependency_scanning/dependency_scanning_sbom/#customizing-analyzer-behavior
-# Container Scanning customization: https://docs.gitlab.com/user/application_security/container_scanning/#customizing-analyzer-behavior
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ci/variables/#cicd-variable-precedence
 stages:
-- test
-- generate
-- release
-
-cache:
-  key: pipeline-state
-  paths:
-    - .julia/artifacts/
-    - .julia/compiled/
-    - .julia/artifacts
-    - latest
+  - test
+  - generate
+  - release
 
 include:
-- template: Security/SAST.gitlab-ci.yml
-- template: Security/Secret-Detection.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
 
 variables:
   SECRET_DETECTION_ENABLED: 'true'
@@ -44,11 +29,12 @@ secret_detection:
 generate:
   stage: generate
   image: julia:1.12.6
+  needs: []
   before_script:
     - rm -f release.env
-    - julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
+    - julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
   script:
-    - cd src && julia --project=. main.jl
+    - julia --project=. src/main.jl
   artifacts:
     name: "nbn-report"
     when: always
@@ -60,14 +46,12 @@ generate:
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/cli:latest
-  rules:
-    - exists:
-        - release.env
-  before_script:
-    - glab auth login --token $CI_JOB_TOKEN --hostname $CI_SERVER_HOST
+  needs:
+    - job: generate
+      artifacts: true
   script:
-    - >
-      glab release create $RELEASE_TAG
-      --name "$RELEASE_VERSION"
-      --assets-links "[{\"name\":\"Dashboard\",\"url\":\"${CI_PROJECT_URL}/-/jobs/${GE_JOB_ID}/artifacts/file/output1.png\"}]"
-
+    - |
+      if [ -z "$RELEASE_TAG" ]; then echo "No new release"; exit 0; fi
+      glab auth login --token "$CI_JOB_TOKEN" --hostname "$CI_SERVER_HOST"
+      glab release create "$RELEASE_TAG" --name "$RELEASE_VERSION" \
+        --assets-links "[{\"name\":\"Dashboard\",\"url\":\"${CI_PROJECT_URL}/-/jobs/${GE_JOB_ID}/artifacts/file/outputs/output1.png\"}]"
