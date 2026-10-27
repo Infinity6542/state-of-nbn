@@ -46,12 +46,14 @@ generate:
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/cli:latest
+  variables:
+    GLAB_ENABLE_CI_AUTOLOGIN: "true"
   needs:
     - job: generate
       artifacts: true
   script:
     - |
       if [ -z "$RELEASE_TAG" ]; then echo "No new release"; exit 0; fi
-      glab auth login --token "$CI_JOB_TOKEN" --hostname "$CI_SERVER_HOST"
-      glab release create "$RELEASE_TAG" --name "$RELEASE_VERSION" \
+      glab release create "$RELEASE_TAG" \
+        --name "$RELEASE_VERSION" \
         --assets-links "[{\"name\":\"Dashboard\",\"url\":\"${CI_PROJECT_URL}/-/jobs/${GE_JOB_ID}/artifacts/file/outputs/output1.png\"}]"
