@@ -30,8 +30,10 @@ cache:
   key:
     files:
       - Manifest.toml
+    prefix: julia
   paths:
     - .julia/
+  when: always
 
 sast:
   stage: test
