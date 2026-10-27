@@ -99,7 +99,6 @@ save(OUTPUT1, fig)
 open(RELEASEENV, "w") do io
     write(io, "RELEASE_VERSION=Report-$number\n")
     write(io, "RELEASE_TAG=$tag\n")
-    write(io, "GE_JOB_ID=$(ENV["CI_JOB_ID"])\n")
 end
 
 println("Completed")
